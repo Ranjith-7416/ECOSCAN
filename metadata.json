@@ -1,0 +1,5 @@
+{
+  "name": "EcoScan: AI Plastic Classifier",
+  "description": "An AI-powered plastic waste classification system that rewards users with Green Points for recycling. Identify HDPE, PET, and LDPE plastics instantly.",
+  "requestFramePermissions": ["camera"]
+}

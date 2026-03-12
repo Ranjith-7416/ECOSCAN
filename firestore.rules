@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - points: number (required, >= 0)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: scans
+    // Document ID: {scanId}
+    // Fields:
+    //   - uid: string (required)
+    //   - plasticType: string (required, enum)
+    //   - confidence: number (optional)
+    //   - pointsEarned: number (required)
+    //   - timestamp: timestamp (required)
+    //   - imageUrl: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'points', 'createdAt']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.points is number && data.points >= 0 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidScan(data) {
+      return data.keys().hasAll(['uid', 'plasticType', 'pointsEarned', 'timestamp']) &&
+             data.uid == request.auth.uid &&
+             data.plasticType in ['PET', 'HDPE', 'LDPE', 'PP', 'PS', 'Other'] &&
+             data.pointsEarned is number && data.pointsEarned >= 0 &&
+             data.timestamp is timestamp;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /scans/{scanId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && isValidScan(request.resource.data);
+      allow update: if false; // Scans are immutable history
+      allow delete: if false;
+    }
+
+    match /redemptions/{redemptionId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && 
+                    request.resource.data.uid == request.auth.uid &&
+                    request.resource.data.status == 'pending' &&
+                    request.resource.data.pointsRedeemed is number &&
+                    request.resource.data.pointsRedeemed > 0;
+      allow update: if false; // Only government (admin) can update status, but we'll keep it simple for now
+      allow delete: if false;
+    }
+  }
+}

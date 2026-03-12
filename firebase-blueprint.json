@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user reward points and profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique identifier for the user." },
+        "email": { "type": "string", "description": "User's email address." },
+        "displayName": { "type": "string", "description": "User's display name." },
+        "points": { "type": "number", "description": "Total Green Points earned." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email", "points"]
+    },
+    "Scan": {
+      "title": "Waste Scan",
+      "description": "Records of plastic waste scanned and classified.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user who performed the scan." },
+        "plasticType": { "type": "string", "enum": ["PET", "HDPE", "LDPE", "PP", "PS", "Other"], "description": "The type of plastic identified." },
+        "confidence": { "type": "number", "description": "AI confidence score." },
+        "pointsEarned": { "type": "number", "description": "Points awarded for this scan." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the scan occurred." },
+        "imageUrl": { "type": "string", "description": "Optional URL to the scanned image (if stored)." }
+      },
+      "required": ["uid", "plasticType", "pointsEarned", "timestamp"]
+    },
+    "Redemption": {
+      "title": "Point Redemption",
+      "description": "Requests for government subsidies/money based on points.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user requesting redemption." },
+        "pointsRedeemed": { "type": "number", "description": "Number of points being converted." },
+        "amount": { "type": "number", "description": "Monetary amount in USD/Local currency." },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Status of the government payout." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the request was made." },
+        "govtReferenceId": { "type": "string", "description": "Reference ID from the government portal." }
+      },
+      "required": ["uid", "pointsRedeemed", "amount", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and points."
+    },
+    "/scans/{scanId}": {
+      "schema": "Scan",
+      "description": "History of all waste scans."
+    },
+    "/redemptions/{redemptionId}": {
+      "schema": "Redemption",
+      "description": "Requests for government payouts."
+    }
+  }
+}
